@@ -1,6 +1,8 @@
 FROM puckel/docker-airflow:1.10.9
 
+USER root
 RUN apt-get update && apt-get install -y postfix
+USER airflow
 
 RUN pip install --user psycopg2-binary
 ENV AIRFLOW_HOME=/usr/local/airflow
