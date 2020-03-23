@@ -22,6 +22,7 @@ services:
   # - postgres
   webserver:
     build: .
+    image: airflow_image:1.0
     container_name: airflow.webserver
     hostname: airflow.webserver
     networks:
@@ -42,6 +43,7 @@ services:
       retries: 3
   scheduler:
     build: .
+    image: airflow_image:1.0
     container_name: airflow.scheduler
     hostname: airflow.scheduler
     networks:
@@ -67,6 +69,7 @@ services:
         - airflow_network
   worker1:
     build: .
+    image: airflow_image:1.0
     container_name: airflow.worker1
     hostname: airflow.worker1
     networks:
@@ -85,6 +88,7 @@ services:
       retries: 3
   worker2:
     build: .
+    image: airflow_image:1.0
     container_name: airflow.worker2
     hostname: airflow.worker2
     networks:
@@ -121,6 +125,7 @@ services:
       retries: 3
   flower:
     build: .
+    image: airflow_image:1.0
     container_name: airflow.flower
     hostname: airflow.flower
     networks:
