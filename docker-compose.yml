@@ -1,8 +1,11 @@
 version: "3"
 services:
   postgres:
-    image: "postgres:9.6"
-    container_name: "postgres"
+    image: "postgres:12.2-alpine"
+    container_name: airflow.postgres
+    hostname: airflow.postgres
+    networks:
+        - airflow_network
     environment:
       - POSTGRES_USER=airflow
       - POSTGRES_PASSWORD=airflow
@@ -13,17 +16,22 @@ services:
       - ./data/postgres:/var/lib/postgresql/data
   # uncomment initdb if you need initdb at first run
   # initdb:
-    # build: .
-    # entrypoint: airflow initdb
-    # depends_on:
-     # - postgres
+  # build: .
+  # entrypoint: airflow initdb
+  # depends_on:
+  # - postgres
   webserver:
     build: .
+    container_name: airflow.webserver
+    hostname: airflow.webserver
+    networks:
+        - airflow_network
     restart: always
     depends_on:
       - postgres
     volumes:
-      - ./airflow_files/dags:/usr/local/airflow/dags
+      - ./data/airflow_files/dags:/usr/local/airflow/dags
+      - ./data/airflow_files/packages:/usr/local/airflow/packages
     ports:
       - "8080:8080"
     entrypoint: airflow webserver
@@ -34,16 +42,103 @@ services:
       retries: 3
   scheduler:
     build: .
+    container_name: airflow.scheduler
+    hostname: airflow.scheduler
+    networks:
+        - airflow_network
     restart: always
     depends_on:
       - postgres
       - webserver
     volumes:
-      - ./airflow_files/dags:/usr/local/airflow/dags
-      - ./airflow_files/logs:/usr/local/airflow/logs
+      - ./data/airflow_files/dags:/usr/local/airflow/dags
+      - ./data/airflow_files/packages:/usr/local/airflow/packages
     entrypoint: airflow scheduler
     healthcheck:
       test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-scheduler.pid ]"]
       interval: 30s
       timeout: 30s
       retries: 3
+  redis:
+    image: redis:5-alpine
+    container_name: airflow.redis
+    hostname: airflow.redis
+    networks:
+        - airflow_network
+  worker1:
+    build: .
+    container_name: airflow.worker1
+    hostname: airflow.worker1
+    networks:
+        - airflow_network
+    restart: always
+    depends_on:
+      - postgres
+    volumes:
+      - ./data/airflow_files/dags:/usr/local/airflow/dags
+      - ./data/airflow_files/packages:/usr/local/airflow/packages
+    entrypoint: airflow worker -cn worker_1
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-worker.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+  worker2:
+    build: .
+    container_name: airflow.worker2
+    hostname: airflow.worker2
+    networks:
+        - airflow_network
+    restart: always
+    depends_on:
+      - postgres
+    volumes:
+      - ./data/airflow_files/dags:/usr/local/airflow/dags
+      - ./data/airflow_files/packages:/usr/local/airflow/packages
+    entrypoint: airflow worker -cn worker_2
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-worker.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+  worker3:
+    build: .
+    container_name: airflow.worker3
+    hostname: airflow.worker3
+    networks:
+        - airflow_network
+    restart: always
+    depends_on:
+      - postgres
+    volumes:
+      - ./data/airflow_files/dags:/usr/local/airflow/dags
+      - ./data/airflow_files/packages:/usr/local/airflow/packages
+    entrypoint: airflow worker -cn worker_3
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-worker.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+  flower:
+    build: .
+    container_name: airflow.flower
+    hostname: airflow.flower
+    networks:
+        - airflow_network
+    restart: always
+    depends_on:
+      - postgres
+    volumes:
+      - ./data/airflow_files/dags:/usr/local/airflow/dags
+      - ./data/airflow_files/packages:/usr/local/airflow/packages
+      - ./data/airflow_files/plugins:/usr/local/airflow/plugins
+    entrypoint: airflow flower
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-flower.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    ports:
+      - "5555:5555"
+networks:
+    airflow_network:
